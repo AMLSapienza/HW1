@@ -98,9 +98,9 @@ class TwoLayerNet(object):
 
         def softmax(matrix):
             # find the maximum reshaping the array as vector 1d keeping the dimensionality as columns
-            m = np.max(z_3, axis=-1, keepdims=True)
+            m = np.max(matrix, axis=-1, keepdims=True)
             #it can be show that accordingly to its formulation, the softmax function does not depens on the max
-            sf_n = np.exp(z_3 - m)
+            sf_n = np.exp(matrix - m)
             sf_d = np.sum(sf_n, axis=-1, keepdims=True)
             return sf_n / sf_d
 
@@ -145,9 +145,22 @@ class TwoLayerNet(object):
         ##############################################################################
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        
+        # Convert y vector of correct labels into a matrix of hot vectors
+        y_lab_hot = np.zeros((y.size, y.max()+1))
+        y_lab_hot[np.arange(y.size),y] = 1
 
-        pass
+        # Store results of loss gradient with respect to scores
+        dJdz = (1/N)*(softmax(z_3) - y_lab_hot)
+
+        # Intermediate chain rule gradients used to estimate final results
+        dW1_1 = np.tensordot(dJdz, np.transpose(W2), axes=1)
+        dW1_2 = dW1_1 * ((z_2 > 0) * 1)
+
+        # Estimate final gradients and store in dictionary accordingly
+        grads['W2'] = np.transpose(np.tensordot(np.transpose(dJdz), a_2, axes=1)) + 2 * reg * W2
+        grads['b2'] = np.sum(dJdz, axis=0)
+        grads['W1'] = np.tensordot(np.transpose(X), dW1_2, axes=1) + 2*reg*W1
+        grads['b1'] = np.sum(dW1_2, axis=0)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
