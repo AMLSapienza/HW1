@@ -210,9 +210,26 @@ class TwoLayerNet(object):
             
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             
+            # Define the possible indexes to be shuffled (create sequence)
+            indexes = np.arange(num_train)
             
+            # Reorganize randomly the indexes
+            np.random.shuffle(indexes)
             
-            pass
+            # Select the shuffled indexes for the minibatch to be used
+            shuffled_indexes = indexes[0:batch_size-1]
+            
+            # Select the minibatch of the features
+            X_batch = X[shuffled_indexes, :]
+            
+            # Select the minibatch  of the label
+            y_batch = y[shuffled_indexes]
+            
+            # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
+            # Compute loss and gradients using the current minibatch
+            loss, grads = self.loss(X_batch, y=y_batch, reg=reg)
+            loss_history.append(loss)
         
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -229,10 +246,18 @@ class TwoLayerNet(object):
             
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             
+            # Define update rule for W1
+            self.params['W1'] += -learning_rate * grads['W1']
             
+            # Define update rule for W2
+            self.params['W2'] += -learning_rate * grads['W2']
             
-            pass
-        
+            # Define update rule for b1
+            self.params['b1'] += -learning_rate * grads['b1']
+            
+            # Define update rule for b2
+            self.params['b2'] += -learning_rate * grads['b2']            
+
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
             if verbose and it % 100 == 0:
@@ -280,9 +305,17 @@ class TwoLayerNet(object):
         
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-
-
-        pass
+        # Define the output for the hidden layer 1 ( z(2) )
+        hidden_layer1 = np.dot(X, self.params['W1']) + self.params['b1']
+        
+        # Apply ReLu activation function ( phi(z(2)) )
+        hidden_layer1[hidden_layer1<=0] = 0
+        
+        # Calculate scores based on first and second layer weights 
+        scores = np.dot(hidden_layer1, self.params['W2']) + self.params['b2']
+        
+        # Make prediction taken the argmax of the scores
+        y_pred = np.argmax(scores, axis=1)    
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 

@@ -5,10 +5,10 @@
 #-----------------------------------------------------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
-from code_py.two_layernet import TwoLayerNet
-from code_py.gradient_check import eval_numerical_gradient
-from code_py.data_utils import get_CIFAR10_data
-from code_py.vis_utils import visualize_grid
+from two_layernet import TwoLayerNet
+from gradient_check import eval_numerical_gradient
+from data_utils import get_CIFAR10_data
+from vis_utils import visualize_grid
 #-------------------------- * End of setup *---------------------------------------
 
 #-------------------------------------------------------
@@ -274,17 +274,126 @@ best_net = None # store the best model into this
 #################################################################################
 
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+from itertools import product
+import random
+import time
+from tqdm import tqdm
+from sklearn.decomposition import PCA
 
+start_time = time.time()
 
+# Define PCA keeping variables that retain 95% of the variance
+pca = PCA(.95)
 
-pass
+# Execute PCA
+pca.fit(X_train)
+
+# Transform data regarding PCA
+X_train = pca.transform(X_train)
+X_val = pca.transform(X_val)
+X_test = pca.transform(X_test)
+
+print("\nPCA successfully executed!!!")
+print("--- %s seconds ---" % (time.time() - start_time))
+
+print('Train data shape: ', X_train.shape)
+print('Train labels shape: ', y_train.shape)
+print('Validation data shape: ', X_val.shape)
+print('Validation labels shape: ', y_val.shape)
+print('Test data shape: ', X_test.shape)
+print('Test labels shape: ', y_test.shape)
+
+# Define initial value to store best accuracy in validation
+best_acc_val = 0
+
+# Define seed to make results reproducible
+seed = 0
+
+# Apply seed
+np.random.seed(seed)
+random.seed(seed)
+
+# Possible learning rates
+learning_rates = 10.0**np.random.uniform(-7,-2,20)
+
+# Possible regularization strenght parameters
+regulariz_strength = 10.0**np.random.uniform(-7,-2,20)
+
+# Possible hidden sizes
+hidden_sizes = random.sample(range(32, 400), 20)
+
+# Possible training epochs
+training_epochs = random.sample(range(100, 500), 20)
+
+whole_grid = list(product(learning_rates, regulariz_strength, hidden_sizes, training_epochs))
+
+# whole_grid = list(product(learning_rates, regulariz_strength))
+print("Combinations in whole grid:", len(whole_grid))
+
+random_grid = random.choices(whole_grid, k = 100)
+# random_grid = whole_grid
+print("Combinations in random grid:", len(random_grid))
+
+cont = 0
+start_time0 = time.time()
+# Iterate over the possible values of the hyperparameters (random search)
+for learning_rate, reg_str, hid_size, train_epoc in tqdm(random_grid):
+    print(learning_rate, reg_str, hid_size, train_epoc)
+    start_time = time.time()
+    cont += 1
+    try:
+        # Define the NN to be used
+        nnet = TwoLayerNet(input_size = X_train.shape[1], hidden_size = hid_size, output_size = 10)
+    
+        # Train NN
+        nnet.train(X_train, y_train, X_val, y_val, learning_rate=learning_rate, reg=reg_str, batch_size = train_epoc, num_iters=2000,  verbose=False)
+    
+        # Make prediction over the validation data set
+        y_val_pred = nnet.predict(X_val)
+    
+        # Make prediction over train data set
+        y_train_pred = nnet.predict(X_train)
+    
+        # Calculate accuracy over validation
+        val_accuracy = np.mean(y_val == y_val_pred)
+     
+        # Calculate accuracy over train
+        train_accuracy = np.mean(y_train == y_train_pred)
+        # results[learning_rate, reg_str] = (train_accuracy, val_accuracy)
+     
+        # Check if the accuracy is better on the new iteration
+        if val_accuracy > best_acc_val:
+        
+            # Save best NN
+            best_net = nnet
+        
+            # Save best accuracy value of validation
+            best_acc_val = val_accuracy
+        
+            #Save best parameters
+            best_learning_rate = learning_rate
+            best_reg_str = reg_str
+            best_hid_size = hid_size
+            best_train_epoc = train_epoc
+    
+#     print("--- %s seconds ---" % (time.time() - start_time))
+        print("Iteration:", cont, "Learning rate:", learning_rate, "Regularization strenght", reg_str,"Hidden Size:", hid_size
+              , "Training epoch", train_epoc, "Accuracy Train", round(train_accuracy,5), "Accuracy Val", round(val_accuracy, 5))
+    
+    except:
+        pass
+print("--- %s seconds ---" % (time.time() - start_time0))
+
+print("The best hyperparameters and results are:")
+print("Learning rate:", best_learning_rate, "Regularization strenght", best_reg_str,"Hidden Size:", best_hid_size
+, "Training epoch", best_train_epoc, "Accuracy Train", "Accuracy Val", round(best_acc_val, 5))
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
 
 # visualize the weights of the best network
 plt.figure(6)
-show_net_weights(best_net)
+# show_net_weights(best_net)
 
 
 # Run on the test set
