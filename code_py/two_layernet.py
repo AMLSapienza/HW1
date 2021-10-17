@@ -210,7 +210,7 @@ class TwoLayerNet(object):
             
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             
-            # Define the possible indexes to be shuffled (create sequence)
+            # Define the possible indexes to be shuffled(create sequence)
             indexes = np.arange(num_train)
             
             # Reorganize randomly the indexes

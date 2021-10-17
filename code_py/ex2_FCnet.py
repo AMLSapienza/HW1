@@ -313,7 +313,7 @@ seed = 0
 np.random.seed(seed)
 random.seed(seed)
 
-# Possible learning rates
+# Possible learning rates 
 learning_rates = 10.0**np.random.uniform(-7,-2,20)
 
 # Possible regularization strenght parameters
