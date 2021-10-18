@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 
+
 def weights_init(m):
     if type(m) == nn.Linear:
         m.weight.data.normal_(0.0, 1e-3)
@@ -32,7 +33,7 @@ learning_rate_decay = 0.95
 reg=0.001
 num_training= 49000
 num_validation =1000
-train = True
+train = False
 
 #-------------------------------------------------
 # Load the CIFAR-10 dataset
@@ -98,6 +99,7 @@ test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
 #-------------------------------------------------
 # Fully connected neural network with one hidden layer
 #-------------------------------------------------
+
 class MultiLayerPerceptron(nn.Module):
     def __init__(self, input_size, hidden_layers, num_classes):
         super(MultiLayerPerceptron, self).__init__()
@@ -111,9 +113,9 @@ class MultiLayerPerceptron(nn.Module):
         layers = [] #Use the layers list to store a variable number of layers
         
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        layers.append(nn.Linear(3072,50))
-        layers.append(nn.ReLU())
-        layers.append(nn.Linear(50,10))
+        layers.append(nn.Linear(in_features=input_size,out_features=hidden_layers[0],bias=True))
+        layers.append(nn.Linear(in_features=hidden_layers[0],out_features=hidden_layers[0],bias=True))
+        layers.append(nn.Linear(in_features=hidden_layers[0],out_features=num_classes, bias=True))
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         # Enter the layers into nn.Sequential, so the model may "see" them
@@ -130,12 +132,13 @@ class MultiLayerPerceptron(nn.Module):
         
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         hidden_1 = self.layers[0]
-        hidden_2 = self.layers[0]
-        relu = self.layers[1]
+        hidden_2 = self.layers[1]
+        output_layer = self.layers[2]
 
-        out = hidden_1(x)
-        out = relu(out)
-        out = hidden_2(out)
+        out = x.view(-1,32*32*3)
+        out = F.relu(hidden_1(out))
+        out = F.relu(hidden_2(out))
+        out = output_layer(out)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         
         return out
@@ -172,9 +175,11 @@ if train:
             # Use examples in https://pytorch.org/tutorials/beginner/pytorch_with_examples.html
             #################################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-            y = model(images)
-            loss,predicted =  0,0
-
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
             if (i+1) % 100 == 0:
@@ -196,9 +201,8 @@ if train:
                 # 2. Get the most confident predicted class        #
                 ####################################################
                 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            
-
+                y_pred = model(images)
+                predicted = torch.argmax(y_pred, dim=1)
                 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
@@ -247,7 +251,8 @@ else:
             # 2. Get the most confident predicted class        #
             ####################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-            predicted = 0
+            y_pred_test = model(images)
+            predicted = torch.argmax(y_pred_test, dim=1)
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             total += labels.size(0)

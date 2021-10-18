@@ -131,3 +131,4 @@ dmypy.json
 code/
 *.ipynb
 .idea/
+.DS_Store
