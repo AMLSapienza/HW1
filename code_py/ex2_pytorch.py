@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 
-
 def weights_init(m):
     if type(m) == nn.Linear:
         m.weight.data.normal_(0.0, 1e-3)
@@ -24,6 +23,7 @@ print('Using device: %s'%device)
 # Hyper-parameters
 #--------------------------------
 input_size = 32 * 32 * 3
+#hidden_size = [200,150,100]
 hidden_size = [50]
 num_classes = 10
 num_epochs = 10
@@ -33,7 +33,7 @@ learning_rate_decay = 0.95
 reg=0.001
 num_training= 49000
 num_validation =1000
-train = False
+train = True
 
 #-------------------------------------------------
 # Load the CIFAR-10 dataset
@@ -99,7 +99,6 @@ test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
 #-------------------------------------------------
 # Fully connected neural network with one hidden layer
 #-------------------------------------------------
-
 class MultiLayerPerceptron(nn.Module):
     def __init__(self, input_size, hidden_layers, num_classes):
         super(MultiLayerPerceptron, self).__init__()
@@ -109,13 +108,16 @@ class MultiLayerPerceptron(nn.Module):
         # hidden_layers[-1] --> num_classes                                             #
         # Make use of linear and relu layers from the torch.nn module                   #
         #################################################################################
-        
+
         layers = [] #Use the layers list to store a variable number of layers
-        
+
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        layers.append(nn.Linear(in_features=input_size,out_features=hidden_layers[0],bias=True))
-        layers.append(nn.Linear(in_features=hidden_layers[0],out_features=hidden_layers[0],bias=True))
-        layers.append(nn.Linear(in_features=hidden_layers[0],out_features=num_classes, bias=True))
+        layers.append(nn.Flatten())
+        for i in range(len(hidden_layers)):
+            layers.append(nn.Linear(in_features=input_size,out_features=hidden_layers[i],bias=True))
+            layers.append(nn.ReLU())
+            input_size = hidden_layers[i]
+        layers.append(nn.Linear(in_features=input_size,out_features=num_classes,bias=True))
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         # Enter the layers into nn.Sequential, so the model may "see" them
@@ -129,18 +131,11 @@ class MultiLayerPerceptron(nn.Module):
         # Softmax is only required for the loss computation and the criterion used below#
         # nn.CrossEntropyLoss() already integrates the softmax and the log loss together#
         #################################################################################
-        
-        # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        hidden_1 = self.layers[0]
-        hidden_2 = self.layers[1]
-        output_layer = self.layers[2]
 
-        out = x.view(-1,32*32*3)
-        out = F.relu(hidden_1(out))
-        out = F.relu(hidden_2(out))
-        out = output_layer(out)
+        # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        out = self.layers(x)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        
+
         return out
 
 model = MultiLayerPerceptron(input_size, hidden_size, num_classes).to(device)
@@ -232,12 +227,12 @@ else:
 
     best_model = None
     best_model = torch.load('model.ckpt')
-    
+
     model.load_state_dict(best_model)
-    
+
     # Test the model
     model.eval() #set dropout and batch normalization layers to evaluation mode
-    
+
     # In test phase, we don't need to compute gradients (for memory efficiency)
     with torch.no_grad():
         correct = 0
@@ -253,7 +248,6 @@ else:
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             y_pred_test = model(images)
             predicted = torch.argmax(y_pred_test, dim=1)
-
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -261,4 +255,3 @@ else:
                 break
 
         print('Accuracy of the network on the {} test images: {} %'.format(total, 100 * correct / total))
-
